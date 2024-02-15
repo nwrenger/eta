@@ -1,6 +1,8 @@
 use std::{fs, path::PathBuf};
 
-use eframe::egui::{self, Modifiers, ScrollArea, TextBuffer, Ui};
+use eframe::egui::{
+    self, text_edit::TextEditOutput, Modifiers, RichText, ScrollArea, TextBuffer, TextEdit, Ui,
+};
 
 use crate::Project;
 
@@ -36,11 +38,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                 ui.heading(header_label);
                 if let Some(contents) = &mut project.file_content {
                     ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
-                        let mut text_edit = egui::TextEdit::multiline(contents)
-                            .code_editor()
-                            .desired_rows(0)
-                            .desired_width(f32::INFINITY)
-                            .show(ui);
+                        let mut text_edit = text_edit_with_line_numbers(ui, contents).unwrap();
 
                         if ui.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::Y)) {
                             if let Some(text_cursor_range) = text_edit.cursor_range {
@@ -93,4 +91,34 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                 }
             });
     });
+}
+
+fn text_edit_with_line_numbers(ui: &mut Ui, text: &mut String) -> Option<TextEditOutput> {
+    let mut text_edit_output: Option<TextEditOutput> = None;
+
+    egui::Grid::new("text_edit_with_line_numbers_grid")
+        .num_columns(2)
+        .spacing([10.0, 0.0])
+        .show(ui, |ui| {
+            ui.vertical(|ui| {
+                let line_count = text.lines().count();
+                for line_number in 1..=line_count + 1 {
+                    ui.label(RichText::new(format!("{:>4}", line_number)).size(12.5));
+                    ui.add_space(-ui.spacing().item_spacing.y);
+                }
+            });
+
+            // Column for the text edit
+            ui.vertical(|ui| {
+                let response = TextEdit::multiline(text)
+                    .code_editor()
+                    .desired_rows(0)
+                    .desired_width(f32::INFINITY)
+                    .show(ui);
+
+                text_edit_output = Some(response);
+            });
+        });
+
+    text_edit_output
 }

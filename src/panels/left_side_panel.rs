@@ -79,9 +79,26 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
             );
             let header = collapse.show_header(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
-                    let select = ui
-                        .selectable_label(false, file_name)
-                        .interact(Sense::click_and_drag());
+                    ui.set_enabled(project.file_edited.is_none());
+                    let select = if project.file_edited.is_none() {
+                        ui.selectable_value(
+                            &mut project.file_path,
+                            Some(entry.to_path_buf()),
+                            file_name,
+                        )
+                        .interact(Sense::click_and_drag())
+                    } else {
+                        ui.selectable_value(
+                            &mut project.file_path,
+                            Some(entry.to_path_buf()),
+                            file_name,
+                        )
+                        .interact(Sense {
+                            click: false,
+                            drag: false,
+                            focusable: false,
+                        })
+                    };
                     select
                         .context_menu(|ui| ctx_menu(ui, project, file_name, EntryType::Directory));
                     if select.dragged() {
