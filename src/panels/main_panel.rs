@@ -26,9 +26,9 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
 
                 let header_color =
                     if project.file_edited.is_some() && project.file_edited == project.file_path {
-                        egui::Color32::LIGHT_BLUE
-                    } else {
                         egui::Color32::WHITE
+                    } else {
+                        egui::Color32::GRAY
                     };
 
                 let header_label = egui::RichText::new(text).color(header_color);
