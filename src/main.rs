@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+pub mod code_editor;
 pub mod panels;
 
 use std::{fs, path::PathBuf};
