@@ -1,7 +1,7 @@
 use std::{fs, io, path::PathBuf};
 
 use eframe::{
-    egui::{self, Sense, Ui},
+    egui::{self, RichText, Sense, Ui},
     epaint::{Color32, Vec2},
 };
 
@@ -79,19 +79,14 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
             );
             let header = collapse.show_header(ui, |ui| {
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
-                    ui.set_enabled(project.file_edited.is_none());
-                    let select = if project.file_edited.is_none() {
-                        ui.selectable_label(false, file_name)
-                            .interact(Sense::click_and_drag())
-                    } else {
-                        ui.selectable_label(false, file_name)
-                            .interact(Sense::click_and_drag())
-                            .interact(Sense {
-                                click: false,
-                                drag: false,
-                                focusable: false,
-                            })
-                    };
+                    let select = ui
+                        .selectable_label(false, file_name)
+                        .interact(Sense::click_and_drag())
+                        .interact(Sense {
+                            click: false,
+                            drag: false,
+                            focusable: false,
+                        });
                     select
                         .context_menu(|ui| ctx_menu(ui, project, file_name, EntryType::Directory));
                     if select.dragged() {
@@ -107,33 +102,33 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
         }
 
         if metadata.is_file() {
-            ui.set_enabled(project.file_edited.is_none());
-            let select = if project.file_edited.is_none() {
-                ui.selectable_value(&mut project.file_path, Some(entry.to_path_buf()), file_name)
-                    .interact(Sense::click_and_drag())
+            let text = if project.is_file_edited(&entry) {
+                RichText::new(file_name.to_string() + " *").color(Color32::WHITE)
             } else {
-                ui.selectable_value(&mut project.file_path, Some(entry.to_path_buf()), file_name)
-                    .interact(Sense {
-                        click: false,
-                        drag: false,
-                        focusable: false,
-                    })
+                RichText::new(file_name)
             };
-            if project.file_edited.is_none() {
-                if select.clicked() {
-                    project.file_content = Some(
-                        fs::read_to_string(project.file_path.as_ref().unwrap_or(&PathBuf::new()))
-                            .unwrap_or_default(),
-                    );
-                    if project.file_path != project.file_edited {
-                        project.file_edited = None;
-                    }
-                }
-                if select.dragged() {
-                    println!("dragging");
-                }
-                select.context_menu(|ui| ctx_menu(ui, project, file_name, EntryType::File));
+            let select = ui
+                .selectable_value(&mut project.current_file, Some(entry.to_path_buf()), text)
+                .interact(Sense {
+                    click: false,
+                    drag: false,
+                    focusable: false,
+                });
+            if !project.is_current_file_edited() && select.clicked() {
+                project.files.insert(
+                    project
+                        .current_file
+                        .as_ref()
+                        .unwrap_or(&PathBuf::default())
+                        .to_path_buf(),
+                    fs::read_to_string(project.current_file.as_ref().unwrap_or(&PathBuf::new()))
+                        .unwrap_or_default(),
+                );
             }
+            if select.dragged() {
+                println!("dragging");
+            }
+            select.context_menu(|ui| ctx_menu(ui, project, file_name, EntryType::File));
         }
     }
 

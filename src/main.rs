@@ -3,7 +3,7 @@
 pub mod code_editor;
 pub mod panels;
 
-use std::{fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use eframe::{
     egui::{self},
@@ -36,12 +36,30 @@ impl App {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Project {
     pub project_path: Option<PathBuf>,
-    pub file_path: Option<PathBuf>,
-    pub file_content: Option<String>,
-    pub file_edited: Option<PathBuf>,
+    pub current_file: Option<PathBuf>,
+    pub files: HashMap<PathBuf, String>,
+    pub files_edited: HashMap<PathBuf, bool>,
+}
+
+impl Project {
+    pub fn is_file_edited(&self, path: &PathBuf) -> bool {
+        self.files_edited.get(path).is_some()
+    }
+
+    pub fn is_current_file_edited(&self) -> bool {
+        self.is_file_edited(&self.current_file.as_ref().unwrap_or(&PathBuf::default()))
+    }
+
+    pub fn get_file(&self, path: &PathBuf) -> Option<String> {
+        self.files.get(path).cloned()
+    }
+
+    pub fn get_current_file(&self) -> Option<String> {
+        self.get_file(&self.current_file.as_ref().unwrap_or(&PathBuf::default()))
+    }
 }
 
 impl eframe::App for App {
@@ -51,14 +69,13 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // commands
         if ctx.input_mut(|i| {
-            self.project.file_edited.is_some()
-                && self.project.file_edited == self.project.file_path
+            self.project.is_current_file_edited()
                 && i.consume_key(egui::Modifiers::COMMAND, egui::Key::S)
         }) {
-            if let Some(file_path) = &self.project.file_path {
-                if let Some(content) = &self.project.file_content {
+            if let Some(file_path) = &self.project.current_file {
+                if let Some(content) = &self.project.files.get(file_path) {
                     fs::write(file_path, content).unwrap_or_default();
-                    self.project.file_edited = None;
+                    self.project.files_edited.remove(file_path);
                 }
             }
         }
