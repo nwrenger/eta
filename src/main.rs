@@ -5,6 +5,7 @@ pub mod panels;
 
 use std::{collections::HashMap, fs, path::PathBuf};
 
+use code_editor::FileData;
 use eframe::{
     egui::{self},
     get_value, set_value, Storage,
@@ -40,7 +41,7 @@ impl App {
 pub struct Project {
     pub project_path: Option<PathBuf>,
     pub current_file: Option<PathBuf>,
-    pub files: HashMap<PathBuf, String>,
+    pub files: HashMap<PathBuf, FileData>,
     pub files_edited: HashMap<PathBuf, bool>,
 }
 
@@ -50,15 +51,15 @@ impl Project {
     }
 
     pub fn is_current_file_edited(&self) -> bool {
-        self.is_file_edited(&self.current_file.as_ref().unwrap_or(&PathBuf::default()))
+        self.is_file_edited(self.current_file.as_ref().unwrap_or(&PathBuf::default()))
     }
 
-    pub fn get_file(&self, path: &PathBuf) -> Option<String> {
+    pub fn get_file(&self, path: &PathBuf) -> Option<FileData> {
         self.files.get(path).cloned()
     }
 
-    pub fn get_current_file(&self) -> Option<String> {
-        self.get_file(&self.current_file.as_ref().unwrap_or(&PathBuf::default()))
+    pub fn get_current_file(&self) -> Option<FileData> {
+        self.get_file(self.current_file.as_ref().unwrap_or(&PathBuf::default()))
     }
 }
 
@@ -74,7 +75,7 @@ impl eframe::App for App {
         }) {
             if let Some(file_path) = &self.project.current_file {
                 if let Some(content) = &self.project.files.get(file_path) {
-                    fs::write(file_path, content).unwrap_or_default();
+                    fs::write(file_path, content.text.clone()).unwrap_or_default();
                     self.project.files_edited.remove(file_path);
                 }
             }

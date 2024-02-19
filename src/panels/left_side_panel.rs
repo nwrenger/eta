@@ -5,7 +5,7 @@ use eframe::{
     epaint::{Color32, Vec2},
 };
 
-use crate::Project;
+use crate::{code_editor::FileData, Project};
 
 #[derive(PartialEq)]
 enum EntryType {
@@ -115,14 +115,25 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
                     focusable: false,
                 });
             if !project.is_current_file_edited() && select.clicked() {
+                let def_edit = FileData::default();
+                let editor = &project
+                    .files
+                    .get(project.current_file.as_ref().unwrap_or(&PathBuf::default()))
+                    .unwrap_or(&def_edit)
+                    .editor;
                 project.files.insert(
                     project
                         .current_file
                         .as_ref()
                         .unwrap_or(&PathBuf::default())
                         .to_path_buf(),
-                    fs::read_to_string(project.current_file.as_ref().unwrap_or(&PathBuf::new()))
+                    FileData {
+                        text: fs::read_to_string(
+                            project.current_file.as_ref().unwrap_or(&PathBuf::new()),
+                        )
                         .unwrap_or_default(),
+                        editor: editor.clone(),
+                    },
                 );
             }
             if select.dragged() {

@@ -37,7 +37,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                     let contents = project.files.get_mut(&current_file);
                     if let Some(contents) = contents {
                         ScrollArea::horizontal().auto_shrink(false).show(ui, |ui| {
-                            let text_edit = ui.add(code_editor("main_panel_ce".into(), contents));
+                            let text_edit = ui.add(code_editor(contents));
 
                             text_changed = text_edit.changed();
                         });
