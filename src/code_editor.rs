@@ -48,7 +48,6 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let id = response.id;
 
     let painter = ui.painter();
-    let mut undoer = editor.state.undoer();
 
     let line_count = text.as_str().split('\n').count();
     let text_offset = egui::Vec2 {
@@ -118,11 +117,9 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let mut cursor_range = editor.state.cursor.range(&galley).unwrap_or_default();
 
     // once before key input
-    undoer.feed_state(
-        ui.input(|i| i.time),
-        &(cursor_range.as_ccursor_range(), text.as_str().to_owned()),
-    );
-    editor.state.set_undoer(undoer.clone());
+    let mut undoer = editor.state.undoer();
+    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()));
+    editor.state.set_undoer(undoer);
 
     // getting keys
     if response.has_focus() {
@@ -261,10 +258,8 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     editor.state.cursor.set_range(Some(cursor_range));
 
     // once after key input
-    undoer.feed_state(
-        ui.input(|i| i.time),
-        &(cursor_range.as_ccursor_range(), text.as_str().to_owned()),
-    );
+    let mut undoer = editor.state.undoer();
+    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()));
     editor.state.set_undoer(undoer);
 
     // info shit
