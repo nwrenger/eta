@@ -20,7 +20,11 @@ fn main() -> Result<(), eframe::Error> {
             .with_min_inner_size([600.0, 400.0]),
         ..Default::default()
     };
-    eframe::run_native("co", options, Box::new(|cc| Box::new(App::new(cc.storage))))
+    eframe::run_native(
+        "eta",
+        options,
+        Box::new(|cc| Box::new(App::new(cc.storage))),
+    )
 }
 
 struct App {

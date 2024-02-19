@@ -740,17 +740,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "co"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "env_logger",
- "raw-window-handle 0.6.0",
- "rfd",
- "serde",
-]
-
-[[package]]
 name = "cocoa"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1221,6 +1210,17 @@ name = "error-code"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "281e452d3bad4005426416cdba5ccfd4f5c1280e10099e21db27f7c1c28347fc"
+
+[[package]]
+name = "eta"
+version = "0.1.0"
+dependencies = [
+ "eframe",
+ "env_logger",
+ "raw-window-handle 0.6.0",
+ "rfd",
+ "serde",
+]
 
 [[package]]
 name = "event-listener"
