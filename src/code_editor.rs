@@ -133,11 +133,11 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
         ui.memory_mut(|mem| mem.set_focus_lock_filter(id, event_filter));
 
         // key presses
-        let keys = ui.input(|i| i.events.clone());
-        for key in keys {
-            let did_mutate_text = match key {
+        let events = ui.input(|i| i.events.clone());
+        for event in events {
+            let did_mutate_text = match event {
                 // First handle events that only changes the selection cursor, not the text:
-                key if cursor_range.on_event(os, &key, &galley, id) => None,
+                event if cursor_range.on_event(os, &event, &galley, id) => None,
 
                 Event::Copy => {
                     if cursor_range.is_empty() {
@@ -215,17 +215,37 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                     modifiers,
                     ..
                 } if modifiers.matches_logically(Modifiers::COMMAND) => {
-                    if let Some((undo_ccursor_range, undo_txt)) = editor.state.undoer().undo(&(
-                        editor.state.cursor.char_range().unwrap(),
-                        text.as_str().to_owned(),
-                    )) {
+                    if let Some((undo_ccursor_range, undo_txt)) = editor
+                        .state
+                        .undoer()
+                        .undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()))
+                    {
                         text.replace_with(undo_txt);
                         Some(*undo_ccursor_range)
                     } else {
                         None
                     }
                 }
-
+                Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } if (modifiers.matches_logically(Modifiers::COMMAND) && key == Key::Y)
+                    || (modifiers.matches_logically(Modifiers::SHIFT | Modifiers::COMMAND)
+                        && key == Key::Z) =>
+                {
+                    if let Some((redo_ccursor_range, redo_txt)) = editor
+                        .state
+                        .undoer()
+                        .redo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()))
+                    {
+                        text.replace_with(redo_txt);
+                        Some(*redo_ccursor_range)
+                    } else {
+                        None
+                    }
+                }
                 Event::Key {
                     modifiers,
                     key,
@@ -255,6 +275,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
             }
         }
     }
+
     editor.state.cursor.set_range(Some(cursor_range));
 
     // once after key input
