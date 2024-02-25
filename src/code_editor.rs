@@ -40,13 +40,13 @@ impl Debug for EditorData {
 pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let FileData { text, editor } = data;
     let text: &mut dyn TextBuffer = text;
-    let os = ui.ctx().os();
 
-    // size
+    // init
+    let os = ui.ctx().os();
     let desired_size = ui.available_size();
     let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click_and_drag());
     let id = response.id;
-
+    let font = TextStyle::Monospace.resolve(ui.style());
     let painter = ui.painter();
 
     let line_count = text.as_str().split('\n').count();
@@ -56,7 +56,11 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     };
     let line_number_position = rect.min;
     let text_position = rect.min + text_offset;
-    let line_height = TextStyle::Monospace.resolve(ui.style()).size;
+    let line_height = font.size;
+
+    let line_numbers = (1..=line_count)
+        .map(|num| num.to_string() + "\n")
+        .collect::<String>();
 
     let scroll_delta = if response.hovered() {
         // cursor
@@ -72,44 +76,19 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     let total_text_height = line_count as f32 * line_height;
 
-    // Adjust the maximum scroll scroll_offset calculation
     if total_text_height > rect.height() {
-        // The last line should be able to scroll to the top of the viewport
-        editor.scroll_offset = editor
-            .scroll_offset
-            .clamp(0.0, total_text_height - rect.height() / 2.0);
+        editor.scroll_offset = editor.scroll_offset.clamp(0.0, total_text_height);
     } else {
-        // If all content fits within the container, disable scrolling
         editor.scroll_offset = 0.0;
     }
 
-    // Calculate visible lines considering the updated clamp logic
-    let visible_lines = ((rect.height() / line_height).floor() as usize).min(line_count);
-    let first_visible_line = (editor.scroll_offset / line_height).floor() as usize;
-
-    // Now calculate the visible text lines, adjusted to not exceed the total line count
-    let visible_text_lines = text
-        .as_str()
-        .lines()
-        .skip(first_visible_line)
-        .take(visible_lines)
-        .collect::<Vec<&str>>()
-        .join("\n");
-
-    // Similar for line numbers
-    let visible_line_numbers = (first_visible_line + 1
-        ..=(first_visible_line + visible_lines).clamp(0, line_count))
-        .map(|num| num.to_string() + "\n")
-        .collect::<String>();
-
     let adjusted_line_number_position =
-        line_number_position - egui::vec2(0.0, editor.scroll_offset % line_height);
-    let adjusted_text_position =
-        text_position - egui::vec2(0.0, editor.scroll_offset % line_height);
+        line_number_position - egui::vec2(0.0, editor.scroll_offset);
+    let adjusted_text_position = text_position - egui::vec2(0.0, editor.scroll_offset);
 
     let galley = painter.layout(
-        visible_text_lines,
-        TextStyle::Monospace.resolve(ui.style()),
+        text.as_str().to_string(),
+        font,
         ui.visuals().text_color(),
         f32::INFINITY,
     );
@@ -118,7 +97,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     // once before key input
     let mut undoer = editor.state.undoer();
-    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()));
+    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_string()));
     editor.state.set_undoer(undoer);
 
     // getting keys
@@ -218,7 +197,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                     if let Some((undo_ccursor_range, undo_txt)) = editor
                         .state
                         .undoer()
-                        .undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()))
+                        .undo(&(cursor_range.as_ccursor_range(), text.as_str().to_string()))
                     {
                         text.replace_with(undo_txt);
                         Some(*undo_ccursor_range)
@@ -238,7 +217,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                     if let Some((redo_ccursor_range, redo_txt)) = editor
                         .state
                         .undoer()
-                        .redo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()))
+                        .redo(&(cursor_range.as_ccursor_range(), text.as_str().to_string()))
                     {
                         text.replace_with(redo_txt);
                         Some(*redo_ccursor_range)
@@ -280,7 +259,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     // once after key input
     let mut undoer = editor.state.undoer();
-    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_owned()));
+    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_string()));
     editor.state.set_undoer(undoer);
 
     // info shit
@@ -295,7 +274,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
         painter.with_clip_rect(rect).text(
             adjusted_line_number_position,
             egui::Align2::LEFT_TOP,
-            visible_line_numbers,
+            line_numbers,
             TextStyle::Monospace.resolve(ui.style()),
             ui.visuals().text_color(),
         );
@@ -304,12 +283,10 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
             .with_clip_rect(rect)
             .galley(adjusted_text_position, galley, Color32::WHITE);
 
-        // Adjust the cursor position with the scrolling offset
-        let adjusted_cursor_pos =
-            cursor_pos + adjusted_text_position.to_vec2() - egui::vec2(0.0, editor.scroll_offset);
+        let adjusted_cursor_pos = cursor_pos + adjusted_text_position.to_vec2();
 
-        let cursor_is_visible =
-            adjusted_cursor_pos.y >= rect.min.y && adjusted_cursor_pos.y <= rect.max.y;
+        let cursor_is_visible = adjusted_cursor_pos.y >= rect.min.y - line_height
+            && adjusted_cursor_pos.y <= rect.max.y;
         // Render the cursor
         if ui.memory(|r| r.has_focus(id)) && cursor_is_visible {
             let cursor_width = 2.0;

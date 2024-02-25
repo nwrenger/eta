@@ -81,12 +81,7 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
                     let select = ui
                         .selectable_label(false, file_name)
-                        .interact(Sense::click_and_drag())
-                        .interact(Sense {
-                            click: false,
-                            drag: false,
-                            focusable: false,
-                        });
+                        .interact(Sense::click_and_drag());
                     select
                         .context_menu(|ui| ctx_menu(ui, project, file_name, EntryType::Directory));
                     if select.dragged() {
@@ -109,11 +104,7 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
             };
             let select = ui
                 .selectable_value(&mut project.current_file, Some(entry.to_path_buf()), text)
-                .interact(Sense {
-                    click: false,
-                    drag: false,
-                    focusable: false,
-                });
+                .interact(Sense::click_and_drag());
             if !project.is_current_file_edited() && select.clicked() {
                 let def_edit = FileData::default();
                 let editor = &project
