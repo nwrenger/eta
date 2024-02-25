@@ -29,10 +29,7 @@ impl Debug for EditorData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("EditorData")
             .field("scroll_offset", &self.scroll_offset)
-            .field(
-                "state",
-                &format!("{:?} {}", &self.state.cursor, &self.state.singleline_offset),
-            )
+            .field("state", &self.state.cursor)
             .finish()
     }
 }
@@ -48,6 +45,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let id = response.id;
     let font = TextStyle::Monospace.resolve(ui.style());
     let painter = ui.painter();
+    let char_limit = usize::MAX;
 
     let line_count = text.as_str().split('\n').count();
     let text_offset = egui::Vec2 {
@@ -74,10 +72,19 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     editor.scroll_offset -= scroll_delta;
 
-    let total_text_height = line_count as f32 * line_height;
+    let galley = painter.layout(
+        text.as_str().to_string(),
+        font,
+        ui.visuals().text_color(),
+        f32::INFINITY,
+    );
+
+    let total_text_height = galley.size().y;
 
     if total_text_height > rect.height() {
-        editor.scroll_offset = editor.scroll_offset.clamp(0.0, total_text_height);
+        editor.scroll_offset = editor
+            .scroll_offset
+            .clamp(0.0, total_text_height - rect.height() / 2.0);
     } else {
         editor.scroll_offset = 0.0;
     }
@@ -85,13 +92,6 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let adjusted_line_number_position =
         line_number_position - egui::vec2(0.0, editor.scroll_offset);
     let adjusted_text_position = text_position - egui::vec2(0.0, editor.scroll_offset);
-
-    let galley = painter.layout(
-        text.as_str().to_string(),
-        font,
-        ui.visuals().text_color(),
-        f32::INFINITY,
-    );
 
     let mut cursor_range = editor.state.cursor.range(&galley).unwrap_or_default();
 
@@ -141,7 +141,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                     if !text_to_insert.is_empty() {
                         let mut ccursor = text.delete_selected(&cursor_range);
 
-                        text.insert_text_at(&mut ccursor, &text_to_insert, usize::MAX);
+                        text.insert_text_at(&mut ccursor, &text_to_insert, char_limit);
 
                         Some(CCursorRange::one(ccursor))
                     } else {
@@ -156,7 +156,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                     {
                         let mut ccursor = text.delete_selected(&cursor_range);
 
-                        text.insert_text_at(&mut ccursor, &text_to_insert, usize::MAX);
+                        text.insert_text_at(&mut ccursor, &text_to_insert, char_limit);
 
                         Some(CCursorRange::one(ccursor))
                     } else {
@@ -174,7 +174,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                         // TODO(emilk): support removing indentation over a selection?
                         text.decrease_indentation(&mut ccursor);
                     } else {
-                        text.insert_text_at(&mut ccursor, "\t", usize::MAX);
+                        text.insert_text_at(&mut ccursor, "\t", char_limit);
                     }
                     Some(CCursorRange::one(ccursor))
                 }
@@ -184,7 +184,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
                     ..
                 } => {
                     let mut ccursor = text.delete_selected(&cursor_range);
-                    text.insert_text_at(&mut ccursor, "\n", usize::MAX);
+                    text.insert_text_at(&mut ccursor, "\n", char_limit);
                     // TODO(emilk): if code editor, auto-indent by same leading tabs, + one if the lines end on an opening bracket
                     Some(CCursorRange::one(ccursor))
                 }
