@@ -22,6 +22,7 @@ pub struct FileData {
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct EditorData {
     pub scroll_offset: f32,
+    pub target_scroll_offset: f32,
     pub state: TextEditState,
 }
 
@@ -37,6 +38,7 @@ impl Debug for EditorData {
 pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let FileData { text, editor } = data;
     let text: &mut dyn TextBuffer = text;
+    let prev_text = text.as_str().to_string();
 
     // init
     let os = ui.ctx().os();
@@ -70,7 +72,18 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
         0.0
     };
 
-    editor.scroll_offset -= scroll_delta;
+    const SMOOTHING_SPEED: f32 = 30.0;
+    let dt = ui.input(|i| i.unstable_dt);
+
+    editor.target_scroll_offset -= scroll_delta;
+
+    // Smoothly move towards the target scroll offset
+    let delta = editor.target_scroll_offset - editor.scroll_offset;
+    if delta.abs() < 1.0 {
+        editor.scroll_offset = editor.target_scroll_offset;
+    } else {
+        editor.scroll_offset += delta * (dt * SMOOTHING_SPEED).min(1.0);
+    }
 
     let galley = painter.layout(
         text.as_str().to_string(),
@@ -83,10 +96,14 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     if total_text_height > rect.height() {
         editor.scroll_offset = editor
-            .scroll_offset
+            .target_scroll_offset
+            .clamp(0.0, total_text_height - rect.height() / 2.0);
+        editor.target_scroll_offset = editor
+            .target_scroll_offset
             .clamp(0.0, total_text_height - rect.height() / 2.0);
     } else {
         editor.scroll_offset = 0.0;
+        editor.target_scroll_offset = 0.0;
     }
 
     let adjusted_line_number_position =
@@ -97,7 +114,10 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     // once before key input
     let mut undoer = editor.state.undoer();
-    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_string()));
+    undoer.feed_state(
+        ui.input(|i| i.time),
+        &(cursor_range.as_ccursor_range(), text.as_str().to_owned()),
+    );
     editor.state.set_undoer(undoer);
 
     // getting keys
@@ -259,11 +279,14 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
 
     // once after key input
     let mut undoer = editor.state.undoer();
-    undoer.add_undo(&(cursor_range.as_ccursor_range(), text.as_str().to_string()));
+    undoer.feed_state(
+        ui.input(|i| i.time),
+        &(cursor_range.as_ccursor_range(), text.as_str().to_owned()),
+    );
     editor.state.set_undoer(undoer);
 
     // info shit
-    response.widget_info(|| egui::WidgetInfo::text_edit(text.as_str(), text.as_str()));
+    response.widget_info(|| egui::WidgetInfo::text_edit(prev_text.to_string(), text.as_str()));
 
     // painting
     if ui.is_rect_visible(rect) {
