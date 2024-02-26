@@ -65,6 +65,16 @@ impl Project {
     pub fn get_current_file(&self) -> Option<FileData> {
         self.get_file(self.current_file.as_ref().unwrap_or(&PathBuf::default()))
     }
+
+    pub fn remove_file(&mut self, path: &PathBuf) {
+        self.files.remove(path);
+        self.files_edited.remove(path);
+        if let Some(current_file) = &self.current_file {
+            if current_file == path {
+                self.current_file = None;
+            }
+        }
+    }
 }
 
 impl eframe::App for App {
