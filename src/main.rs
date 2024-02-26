@@ -99,8 +99,9 @@ impl eframe::App for App {
                 if Some(project_path) != self.project.project_path.as_ref() {
                     self.project = Project {
                         project_path: Some(project_path.to_path_buf()),
-                        ..Default::default()
+                        ..self.project.clone()
                     };
+                    self.project.current_file = None;
                 }
             }
         }

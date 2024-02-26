@@ -28,7 +28,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
     };
 
     ui.painter()
-        .rect_filled(rect, 1.0, egui::Color32::from_gray(35));
+        .rect_filled(rect, 2.0, egui::Color32::from_gray(35));
     ui.add(Label::new(RichText::new(header_text).heading()).truncate(true));
     egui::ScrollArea::vertical()
         .auto_shrink(true)
@@ -42,8 +42,9 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                         if Some(project_path) != project.project_path.as_ref() {
                             *project = Project {
                                 project_path: Some(project_path.to_path_buf()),
-                                ..Default::default()
+                                ..project.clone()
                             };
+                            project.current_file = None;
                         }
                     }
                 }
