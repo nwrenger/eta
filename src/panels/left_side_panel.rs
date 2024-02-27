@@ -188,12 +188,15 @@ fn ctx_menu(
     entry_type: EntryType,
     response: &Response,
 ) {
+    // state
     let mut editable: (String, String, String) = ui
         .memory_mut(|w| w.data.get_persisted(ui.id()))
         .unwrap_or((String::new(), String::new(), file_name.to_string()));
+    // update like current name for renaming data on changes
     if response.clicked_by(egui::PointerButton::Secondary) {
         editable = (String::new(), String::new(), file_name.to_string());
     }
+
     ui.label(file_name);
     if entry_type == EntryType::Root || entry_type == EntryType::Directory {
         ui.menu_button("Add Directory", |ui| {

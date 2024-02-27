@@ -85,9 +85,9 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
         editor.scroll_offset += delta * (dt * SMOOTHING_SPEED).min(1.0);
     }
 
-    let galley = painter.layout(
+    let mut galley = painter.layout(
         text.as_str().to_string(),
-        font,
+        font.clone(),
         ui.visuals().text_color(),
         f32::INFINITY,
     );
@@ -262,7 +262,12 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
             };
             if let Some(new_ccursor_range) = did_mutate_text {
                 // Layout again to avoid frame delay, and to keep `text` and `galley` in sync. TODO: Add this
-                // *galley = layouter(ui, text.as_str(), wrap_width);
+                galley = painter.layout(
+                    text.as_str().to_string(),
+                    font.clone(),
+                    ui.visuals().text_color(),
+                    f32::INFINITY,
+                );
 
                 // Set cursor_range using new galley:
                 cursor_range = CursorRange {
