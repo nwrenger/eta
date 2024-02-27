@@ -7,7 +7,8 @@ use eframe::{
         text::CCursor,
         text_edit::TextEditState,
         text_selection::{CCursorRange, CursorRange},
-        CursorIcon, Event, EventFilter, Key, Modifiers, Response, TextBuffer, TextStyle, Ui,
+        CursorIcon, Event, EventFilter, Key, Modifiers, Response, Stroke, TextBuffer, TextStyle,
+        Ui,
     },
     epaint::{Color32, Galley, Vec2},
 };
@@ -48,6 +49,13 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     let font = TextStyle::Monospace.resolve(ui.style());
     let painter = ui.painter();
     let char_limit = usize::MAX;
+
+    // colors
+    let secondary = Color32::from_gray(35);
+    let stroke = Stroke {
+        width: 1.0,
+        color: Color32::from_gray(40),
+    };
 
     let line_count = text.as_str().split('\n').count();
     let text_offset = egui::Vec2 {
@@ -296,8 +304,7 @@ pub fn code_editor_ui(ui: &mut Ui, data: &mut FileData) -> Response {
     // painting
     if ui.is_rect_visible(rect) {
         let cursor_pos = galley.pos_from_cursor(&cursor_range.primary).min;
-        let visuals = ui.style().interact(&response);
-        painter.rect(rect, 2.0, Color32::from_gray(35), visuals.bg_stroke);
+        painter.rect(rect, 1.0, secondary, stroke);
 
         painter.with_clip_rect(rect).text(
             adjusted_line_number_position,

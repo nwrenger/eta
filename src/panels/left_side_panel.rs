@@ -5,7 +5,7 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, Label, Response, RichText, Sense, TextEdit, Ui},
+    egui::{self, Label, Response, RichText, Sense, Stroke, TextEdit, Ui},
     epaint::Color32,
 };
 
@@ -22,13 +22,19 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
     let binding = project.project_path.clone().unwrap_or_default();
     let header_text = binding.file_name().unwrap_or_default().to_string_lossy();
 
+    // colors
+    let secondary = Color32::from_gray(35);
+    let stroke = Stroke {
+        width: 1.0,
+        color: Color32::from_gray(40),
+    };
+
     let rect = egui::Rect {
         min: ui.max_rect().min + egui::Vec2 { x: -2.0, y: 20.5 },
         max: ui.max_rect().max + egui::Vec2 { x: 2.0, y: 0.0 },
     };
 
-    ui.painter()
-        .rect_filled(rect, 2.0, egui::Color32::from_gray(35));
+    ui.painter().rect(rect, 1.0, secondary, stroke);
     ui.add(Label::new(RichText::new(header_text).heading()).truncate(true));
     egui::ScrollArea::vertical()
         .auto_shrink(true)
