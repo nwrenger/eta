@@ -5,7 +5,7 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, Label, RichText, Sense, TextEdit, Ui},
+    egui::{self, Label, Response, RichText, Sense, TextEdit, Ui},
     epaint::Color32,
 };
 
@@ -64,6 +64,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                             .unwrap_or_default()
                             .to_string_lossy(),
                         EntryType::Root,
+                        &response,
                     )
                 });
             });
@@ -114,6 +115,7 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
                             entry.to_path_buf(),
                             file_name,
                             EntryType::Directory,
+                            &select,
                         )
                     });
                     if select.dragged() {
@@ -163,7 +165,14 @@ fn file_side_bar(ui: &mut Ui, path: &PathBuf, project: &mut Project) -> io::Resu
                 println!("dragging");
             }
             select.context_menu(|ui| {
-                ctx_menu(ui, project, entry.to_path_buf(), file_name, EntryType::File)
+                ctx_menu(
+                    ui,
+                    project,
+                    entry.to_path_buf(),
+                    file_name,
+                    EntryType::File,
+                    &select,
+                )
             });
         }
     }
@@ -177,10 +186,14 @@ fn ctx_menu(
     path: PathBuf,
     file_name: &str,
     entry_type: EntryType,
+    response: &Response,
 ) {
     let mut editable: (String, String, String) = ui
         .memory_mut(|w| w.data.get_persisted(ui.id()))
         .unwrap_or((String::new(), String::new(), file_name.to_string()));
+    if response.clicked_by(egui::PointerButton::Secondary) {
+        editable = (String::new(), String::new(), file_name.to_string());
+    }
     ui.label(file_name);
     if entry_type == EntryType::Root || entry_type == EntryType::Directory {
         ui.menu_button("Add Directory", |ui| {
@@ -235,6 +248,16 @@ fn ctx_menu(
                 EntryType::Directory => fs::remove_dir_all(&path).unwrap(),
                 EntryType::File => fs::remove_file(&path).unwrap(),
                 _ => {}
+            }
+            if &path == project.current_file.as_ref().unwrap_or(&PathBuf::new())
+                || project
+                    .current_file
+                    .as_ref()
+                    .unwrap_or(&PathBuf::new())
+                    .starts_with(path.clone())
+            {
+                project.current_file = None;
+                project.remove_file(&project.current_file.clone().unwrap_or_default())
             }
             project.remove_file(&path);
             ui.close_menu();
