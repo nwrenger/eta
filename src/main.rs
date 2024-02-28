@@ -3,12 +3,17 @@
 pub mod code_editor;
 pub mod panels;
 
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::{self},
+    path::PathBuf,
+    sync::Arc,
+};
 
 use code_editor::FileData;
 use eframe::{
     egui::{self},
-    get_value, set_value, Storage,
+    get_value, icon_data, set_value, Storage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +22,10 @@ fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1000.0, 700.0])
-            .with_min_inner_size([600.0, 400.0]),
+            .with_min_inner_size([600.0, 400.0])
+            .with_icon(Arc::new(
+                icon_data::from_png_bytes(include_bytes!("../assets/icon.png")).unwrap(),
+            )),
         ..Default::default()
     };
     eframe::run_native(
