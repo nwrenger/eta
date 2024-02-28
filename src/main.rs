@@ -43,6 +43,7 @@ impl App {
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Project {
+    pub terminal_opened: bool,
     pub project_path: Option<PathBuf>,
     pub current_file: Option<PathBuf>,
     pub files: HashMap<PathBuf, FileData>,
@@ -109,7 +110,7 @@ impl eframe::App for App {
         // panels
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(false)
-            .default_height(40.0)
+            .min_height(30.0)
             .show(ctx, |ui| {
                 panels::bottom_panel::init(ui, &mut self.project);
             });

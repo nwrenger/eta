@@ -5,7 +5,7 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, Label, Response, RichText, Sense, Stroke, TextEdit, Ui},
+    egui::{self, Response, RichText, Sense, TextEdit, Ui},
     epaint::Color32,
 };
 
@@ -19,23 +19,7 @@ enum EntryType {
 }
 
 pub fn init(ui: &mut Ui, project: &mut Project) {
-    let binding = project.project_path.clone().unwrap_or_default();
-    let header_text = binding.file_name().unwrap_or_default().to_string_lossy();
-
-    // colors
-    let secondary = Color32::from_gray(35);
-    let stroke = Stroke {
-        width: 1.0,
-        color: Color32::from_gray(40),
-    };
-
-    let rect = egui::Rect {
-        min: ui.max_rect().min + egui::Vec2 { x: -2.0, y: 20.5 },
-        max: ui.max_rect().max + egui::Vec2 { x: 2.0, y: 0.0 },
-    };
-
-    ui.painter().rect(rect, 1.0, secondary, stroke);
-    ui.add(Label::new(RichText::new(header_text).heading()).truncate(true));
+    ui.add_space(5.0);
     egui::ScrollArea::vertical()
         .auto_shrink(true)
         .max_height(ui.available_height() - 3.0)
@@ -43,36 +27,28 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
                 if let Some(path) = project.project_path.clone() {
                     file_side_bar(ui, &path, project).unwrap_or_default();
-                } else if ui.button("Open Project").clicked() {
-                    if let Some(project_path) = &rfd::FileDialog::new().pick_folder() {
-                        if Some(project_path) != project.project_path.as_ref() {
-                            *project = Project {
-                                project_path: Some(project_path.to_path_buf()),
-                                ..project.clone()
-                            };
-                            project.current_file = None;
-                        }
-                    }
-                }
-                let response =
-                    ui.allocate_response(ui.available_size(), egui::Sense::click_and_drag());
+                    let response =
+                        ui.allocate_response(ui.available_size(), egui::Sense::click_and_drag());
 
-                response.context_menu(|ui| {
-                    ctx_menu(
-                        ui,
-                        project,
-                        project.project_path.clone().unwrap_or_default(),
-                        &project
-                            .project_path
-                            .clone()
-                            .unwrap_or_default()
-                            .file_name()
-                            .unwrap_or_default()
-                            .to_string_lossy(),
-                        EntryType::Root,
-                        &response,
-                    )
-                });
+                    response.context_menu(|ui| {
+                        ctx_menu(
+                            ui,
+                            project,
+                            project.project_path.clone().unwrap_or_default(),
+                            &project
+                                .project_path
+                                .clone()
+                                .unwrap_or_default()
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy(),
+                            EntryType::Root,
+                            &response,
+                        )
+                    });
+                } else {
+                    ui.label("No Project Opened...");
+                }
             });
         });
 }
