@@ -117,7 +117,6 @@ impl eframe::App for App {
 
         // panels
         egui::TopBottomPanel::bottom("bottom_panel")
-            .resizable(false)
             .min_height(30.0)
             .show(ctx, |ui| {
                 panels::bottom_panel::init(ui, &mut self.project);
