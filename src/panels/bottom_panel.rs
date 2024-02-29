@@ -37,13 +37,5 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                 });
             });
         });
-
-        if project.terminal_opened {
-            ui.separator();
-            ui.scope(|ui| {
-                ui.set_height(200.0);
-                ui.label("Not Implemented Yet!");
-            });
-        }
     });
 }
