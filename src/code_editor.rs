@@ -7,8 +7,7 @@ use eframe::{
         text::CCursor,
         text_edit::TextEditState,
         text_selection::{CCursorRange, CursorRange},
-        CursorIcon, Event, EventFilter, Key, Modifiers, Response, Stroke, TextBuffer, TextStyle,
-        Ui,
+        CursorIcon, Event, EventFilter, Key, Modifiers, Response, TextBuffer, TextStyle, Ui,
     },
     epaint::{Color32, Galley, Vec2},
 };
@@ -52,11 +51,8 @@ impl ExtendedCodeEditor {
         let char_limit = usize::MAX;
 
         // colors
-        let secondary = Color32::from_gray(35);
-        let stroke = Stroke {
-            width: 1.0,
-            color: Color32::from_gray(40),
-        };
+        let secondary = ui.style().visuals.faint_bg_color;
+        let stroke = ui.style().visuals.window_stroke;
 
         let line_count = text.as_str().split('\n').count();
         let text_offset = egui::Vec2 {

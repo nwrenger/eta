@@ -27,16 +27,18 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
-                        .selectable_label(project.terminal.is_some(), "Terminal")
+                        .selectable_label(project.get_current_terminal().is_some(), "Terminal")
                         .clicked()
                     {
-                        if project.terminal.is_some() {
-                            project.terminal = None;
+                        if project.get_current_terminal().is_some() {
+                            project
+                                .remove_terminal(&project.project_path.clone().unwrap_or_default());
                         } else {
                             let mut cmd = CommandBuilder::new_default_prog();
-                            cmd.cwd(project.project_path.clone().unwrap_or_default());
+                            let path = project.project_path.clone().unwrap_or_default();
+                            cmd.cwd(&path);
                             let term = TermHandler::new(cmd);
-                            project.terminal = Some(term);
+                            project.terminals.insert(path, term);
                         }
                     }
                 });

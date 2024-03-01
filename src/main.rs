@@ -49,7 +49,7 @@ impl App {
 #[derive(Serialize, Deserialize, Default)]
 pub struct Project {
     #[serde(skip)]
-    pub terminal: Option<TermHandler>,
+    pub terminals: HashMap<PathBuf, TermHandler>,
     pub project_path: Option<PathBuf>,
     pub current_file: Option<PathBuf>,
     pub files: HashMap<PathBuf, FileData>,
@@ -65,12 +65,30 @@ impl Project {
         self.is_file_edited(self.current_file.as_ref().unwrap_or(&PathBuf::default()))
     }
 
-    pub fn get_file(&self, path: &PathBuf) -> Option<FileData> {
-        self.files.get(path).cloned()
+    pub fn get_file(&self, path: &PathBuf) -> Option<&FileData> {
+        self.files.get(path)
     }
 
-    pub fn get_current_file(&self) -> Option<FileData> {
+    pub fn get_current_file(&self) -> Option<&FileData> {
         self.get_file(self.current_file.as_ref().unwrap_or(&PathBuf::default()))
+    }
+
+    pub fn get_terminal(&self, path: &PathBuf) -> Option<&TermHandler> {
+        self.terminals.get(path)
+    }
+
+    pub fn get_current_terminal(&self) -> Option<&TermHandler> {
+        self.terminals
+            .get(self.project_path.as_ref().unwrap_or(&PathBuf::default()))
+    }
+
+    pub fn get_mut_terminal(&mut self, path: &PathBuf) -> Option<&mut TermHandler> {
+        self.terminals.get_mut(path)
+    }
+
+    pub fn get_mut_current_terminal(&mut self) -> Option<&mut TermHandler> {
+        self.terminals
+            .get_mut(self.project_path.as_ref().unwrap_or(&PathBuf::default()))
     }
 
     pub fn remove_file(&mut self, path: &PathBuf) {
@@ -81,6 +99,10 @@ impl Project {
                 self.current_file = None;
             }
         }
+    }
+
+    fn remove_terminal(&mut self, path: &PathBuf) {
+        self.terminals.remove(path);
     }
 }
 
