@@ -1,5 +1,6 @@
-use crate::Project;
+use crate::{terminal::TermHandler, Project};
 use eframe::egui::{self, Ui};
+use portable_pty::CommandBuilder;
 
 pub fn init(ui: &mut Ui, project: &mut Project) {
     ui.vertical(|ui| {
@@ -14,10 +15,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                         if ui.selectable_label(false, "Open New Project...").clicked() {
                             if let Some(project_path) = &rfd::FileDialog::new().pick_folder() {
                                 if Some(project_path) != project.project_path.as_ref() {
-                                    *project = Project {
-                                        project_path: Some(project_path.to_path_buf()),
-                                        ..project.clone()
-                                    };
+                                    project.project_path = Some(project_path.to_path_buf());
                                     project.current_file = None;
                                 }
                             }
@@ -29,10 +27,17 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui
-                        .selectable_label(project.terminal_opened, "Terminal")
+                        .selectable_label(project.terminal.is_some(), "Terminal")
                         .clicked()
                     {
-                        project.terminal_opened = !project.terminal_opened;
+                        if project.terminal.is_some() {
+                            project.terminal = None;
+                        } else {
+                            let mut cmd = CommandBuilder::new_default_prog();
+                            cmd.cwd(project.project_path.clone().unwrap_or_default());
+                            let term = TermHandler::new(cmd);
+                            project.terminal = Some(term);
+                        }
                     }
                 });
             });

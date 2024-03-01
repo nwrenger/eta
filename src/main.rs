@@ -2,13 +2,9 @@
 
 pub mod code_editor;
 pub mod panels;
+pub mod terminal;
 
-use std::{
-    collections::HashMap,
-    fs::{self},
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 use code_editor::FileData;
 use eframe::{
@@ -16,6 +12,7 @@ use eframe::{
     get_value, icon_data, set_value, Storage,
 };
 use serde::{Deserialize, Serialize};
+use terminal::TermHandler;
 
 fn main() -> Result<(), eframe::Error> {
     env_logger::init();
@@ -49,9 +46,10 @@ impl App {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Project {
-    pub terminal_opened: bool,
+    #[serde(skip)]
+    pub terminal: Option<TermHandler>,
     pub project_path: Option<PathBuf>,
     pub current_file: Option<PathBuf>,
     pub files: HashMap<PathBuf, FileData>,
@@ -106,13 +104,13 @@ impl eframe::App for App {
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::O)) {
             if let Some(project_path) = &rfd::FileDialog::new().pick_folder() {
                 if Some(project_path) != self.project.project_path.as_ref() {
-                    self.project = Project {
-                        project_path: Some(project_path.to_path_buf()),
-                        ..self.project.clone()
-                    };
+                    self.project.project_path = Some(project_path.to_path_buf());
                     self.project.current_file = None;
                 }
             }
+        }
+        if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::D)) {
+            self.project = Project::default();
         }
 
         // panels
