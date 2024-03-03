@@ -8,7 +8,7 @@ use std::fmt::Debug;
 use std::io::prelude::*;
 use std::sync::Arc;
 
-use eframe::egui::{self, EventFilter};
+use eframe::egui::{self, EventFilter, Pos2};
 pub use portable_pty::CommandBuilder;
 use portable_pty::PtySize;
 use sysinfo::System;
@@ -184,13 +184,10 @@ impl TermHandler {
 
     fn event_pointer_move(
         &mut self,
-        e: &Event,
+        pos: &Pos2,
         response: &Response,
         modifiers: Modifiers,
     ) -> TermResult {
-        let Event::PointerMoved(pos) = e else {
-            unreachable!()
-        };
         let relative_pos = *pos - response.rect.min;
         let char_x = (relative_pos.x / 12.0) as usize;
         let char_y = (relative_pos.y / 12.0) as i64;
@@ -240,13 +237,10 @@ impl TermHandler {
 
     fn event_scroll(
         &mut self,
-        e: &Event,
+        offset: &Vec2,
         modifiers: Modifiers,
         pointer_position: Vec2,
     ) -> TermResult {
-        let Event::Scroll(pos) = e else {
-            unreachable!()
-        };
         let char_x = (pointer_position.x / self.text_width) as usize;
         let char_y = (pointer_position.y / self.text_height) as i64;
         self.terminal.mouse_event(wezterm_term::MouseEvent {
@@ -255,13 +249,14 @@ impl TermHandler {
             y: char_y,
             x_pixel_offset: 0,
             y_pixel_offset: 0,
-            button: if pos.y.is_sign_positive() {
-                wezterm_term::MouseButton::WheelUp(pos.y as usize)
+            button: if offset.y.is_sign_positive() {
+                wezterm_term::MouseButton::WheelUp(offset.y as usize)
             } else {
-                wezterm_term::MouseButton::WheelDown(-pos.y as usize)
+                wezterm_term::MouseButton::WheelDown(-offset.y as usize)
             },
             modifiers: modifiers.into_wez(),
         })?;
+        dbg!(self.terminal.is_mouse_grabbed());
 
         Ok(())
     }
@@ -291,21 +286,19 @@ impl TermHandler {
     }
 
     #[allow(unused_variables)]
-    fn event_text(&mut self, e: &Event, modifiers: Modifiers) -> TermResult {
-        let Event::Text(t) = e else { unreachable!() };
-
-        if t == "exit" {
+    fn event_text(&mut self, text: &String, modifiers: Modifiers) -> TermResult {
+        if text == "exit" {
             panic!("it fucking doesnt exist anymore what do you want from me");
         }
 
-        t.chars()
+        text.chars()
             .filter(|c| !"abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(*c))
             .try_for_each(|c| {
                 self.terminal
                     .key_down(wezterm_term::KeyCode::Char(c), modifiers.into_wez())
             })
             .and_then(|_| {
-                t.chars().try_for_each(|c| {
+                text.chars().try_for_each(|c| {
                     self.terminal
                         .key_up(wezterm_term::KeyCode::Char(c), modifiers.into_wez())
                 })
@@ -325,13 +318,14 @@ impl TermHandler {
         i: &InputState,
     ) -> Result<(), Error> {
         match event {
-            Event::PointerMoved(_) => self.event_pointer_move(event, response, i.modifiers),
+            Event::PointerMoved(pos) => self.event_pointer_move(pos, response, i.modifiers),
             Event::PointerButton { .. } => self.event_pointer_button(event, response),
-            Event::Scroll(_) => {
-                self.event_scroll(event, i.modifiers, self.relative_pointer_pos(response, i))
+            Event::Scroll(offset) => {
+                println!("{:?}", event);
+                self.event_scroll(offset, i.modifiers, self.relative_pointer_pos(response, i))
             }
             Event::Key { .. } => self.event_key(event),
-            Event::Text(_) => self.event_text(event, i.modifiers),
+            Event::Text(text) => self.event_text(text, i.modifiers),
             _ => Ok(()),
         }
     }
@@ -431,6 +425,7 @@ impl TermHandler {
                 f.row_height(&self.style.font).round(),
             )
         });
+        self.terminal.enable_conpty_quirks();
 
         self.size.cols = (widget_size.x / self.text_width) as usize;
         self.size.rows = (widget_size.y / self.text_height) as usize;

@@ -92,4 +92,12 @@ impl wezterm_term::TerminalConfiguration for Config {
     fn enable_csi_u_key_encoding(&self) -> bool {
         true
     }
+
+    fn enable_kitty_graphics(&self) -> bool {
+        true
+    }
+
+    fn enable_kitty_keyboard(&self) -> bool {
+        true
+    }
 }
