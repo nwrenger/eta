@@ -104,6 +104,15 @@ impl Project {
     fn remove_terminal(&mut self, path: &PathBuf) {
         self.terminals.remove(path);
     }
+
+    fn open_project(&mut self) {
+        if let Some(project_path) = &rfd::FileDialog::new().pick_folder() {
+            if Some(project_path) != self.project_path.as_ref() {
+                self.project_path = Some(project_path.to_path_buf());
+                self.current_file = None;
+            }
+        }
+    }
 }
 
 impl eframe::App for App {
@@ -124,12 +133,7 @@ impl eframe::App for App {
             }
         }
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::O)) {
-            if let Some(project_path) = &rfd::FileDialog::new().pick_folder() {
-                if Some(project_path) != self.project.project_path.as_ref() {
-                    self.project.project_path = Some(project_path.to_path_buf());
-                    self.project.current_file = None;
-                }
-            }
+            self.project.open_project();
         }
 
         // panels

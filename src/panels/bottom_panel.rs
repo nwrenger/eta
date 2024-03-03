@@ -13,12 +13,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
                     .selected_text("Editor")
                     .show_ui(ui, |ui| {
                         if ui.selectable_label(false, "Open New Project...").clicked() {
-                            if let Some(project_path) = &rfd::FileDialog::new().pick_folder() {
-                                if Some(project_path) != project.project_path.as_ref() {
-                                    project.project_path = Some(project_path.to_path_buf());
-                                    project.current_file = None;
-                                }
-                            }
+                            project.open_project();
                         }
                         if ui.selectable_label(false, "Clear Cache").clicked() {
                             *project = Project::default();
