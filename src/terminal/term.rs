@@ -256,7 +256,6 @@ impl TermHandler {
             },
             modifiers: modifiers.into_wez(),
         })?;
-        dbg!(self.terminal.is_mouse_grabbed());
 
         Ok(())
     }
@@ -321,7 +320,6 @@ impl TermHandler {
             Event::PointerMoved(pos) => self.event_pointer_move(pos, response, i.modifiers),
             Event::PointerButton { .. } => self.event_pointer_button(event, response),
             Event::Scroll(offset) => {
-                println!("{:?}", event);
                 self.event_scroll(offset, i.modifiers, self.relative_pointer_pos(response, i))
             }
             Event::Key { .. } => self.event_key(event),
