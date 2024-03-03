@@ -131,9 +131,6 @@ impl eframe::App for App {
                 }
             }
         }
-        if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::D)) {
-            self.project = Project::default();
-        }
 
         // panels
         egui::TopBottomPanel::bottom("bottom_panel")

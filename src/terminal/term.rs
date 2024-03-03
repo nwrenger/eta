@@ -336,13 +336,6 @@ impl TermHandler {
         }
     }
 
-    fn manage_inputs(&mut self, i: &InputState, response: &Response) -> Vec<Result<(), Error>> {
-        i.events
-            .iter()
-            .map(|event| self.manage_event(event, response, i))
-            .collect()
-    }
-
     fn generate_rows(&mut self, ui: &mut Ui) -> Response {
         let palette = self.terminal.get_config().color_palette();
         let size = self.size;
@@ -399,17 +392,15 @@ impl TermHandler {
             ui.output_mut(|o| o.mutable_text_under_cursor = true);
         }
 
+        if response.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Text);
+        }
         if response.has_focus() {
-            if response.hovered() {
-                ui.ctx().set_cursor_icon(egui::CursorIcon::Text);
-            }
             self.was_focused = true;
-            ui.input_mut(|i| {
-                self.manage_inputs(i, &response).iter().for_each(|res| {
-                    let Err(e) = res else { return };
-                    eprintln!("terminal input error {e:?}");
-                });
-            });
+            let i = ui.input(|i| i.clone());
+            for event in &i.events {
+                self.manage_event(event, &response, &i).unwrap();
+            }
         } else {
             self.was_focused = false;
         }

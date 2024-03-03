@@ -88,4 +88,8 @@ impl wezterm_term::TerminalConfiguration for Config {
     fn enable_title_reporting(&self) -> bool {
         self.title_reporting
     }
+
+    fn enable_csi_u_key_encoding(&self) -> bool {
+        true
+    }
 }
