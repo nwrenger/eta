@@ -5,7 +5,7 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, Response, RichText, Sense, TextEdit, Ui},
+    egui::{self, Key, Modifiers, Response, RichText, Sense, TextEdit, Ui},
     epaint::Color32,
 };
 
@@ -182,16 +182,26 @@ fn ctx_menu(
     ui.label(file_name);
     if entry_type == EntryType::Root || entry_type == EntryType::Directory {
         ui.menu_button("Add Directory", |ui| {
-            ui.add(TextEdit::singleline(&mut editable.0).hint_text("Directory Name"));
-            if ui.button("Add").clicked() {
+            let input_field = ui.add(
+                TextEdit::singleline(&mut editable.0)
+                    .hint_text("Directory Name")
+                    .cursor_at_end(true),
+            );
+            if ui.button("Add").clicked()
+                || (input_field.lost_focus()
+                    && ui.input_mut(|r| r.consume_key(Modifiers::NONE, Key::Enter)))
+            {
                 fs::create_dir(path.join(&editable.0)).unwrap();
                 editable.0 = String::new();
                 ui.close_menu();
             }
         });
         ui.menu_button("Add File", |ui| {
-            ui.add(TextEdit::singleline(&mut editable.1).hint_text("File Name"));
-            if ui.button("Add").clicked() {
+            let input_field = ui.add(TextEdit::singleline(&mut editable.1).hint_text("File Name"));
+            if ui.button("Add").clicked()
+                || (input_field.lost_focus()
+                    && ui.input_mut(|r| r.consume_key(Modifiers::NONE, Key::Enter)))
+            {
                 fs::write(path.join(&editable.1), "").unwrap();
                 editable.1 = String::new();
                 ui.close_menu();
@@ -200,8 +210,11 @@ fn ctx_menu(
     }
     if entry_type == EntryType::Directory || entry_type == EntryType::File {
         ui.menu_button("Rename", |ui| {
-            ui.add(TextEdit::singleline(&mut editable.2).hint_text("Name"));
-            if ui.button("Apply").clicked() {
+            let input_field = ui.add(TextEdit::singleline(&mut editable.2).hint_text("Name"));
+            if ui.button("Apply").clicked()
+                || (input_field.lost_focus()
+                    && ui.input_mut(|r| r.consume_key(Modifiers::NONE, Key::Enter)))
+            {
                 let new_path = rename(&path, &editable.2).unwrap_or(path.clone());
                 editable.2 = new_path
                     .file_name()
