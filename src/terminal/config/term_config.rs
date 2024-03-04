@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use eframe::egui;
+use eframe::egui::{self, TextStyle};
 use egui::ecolor::HexColor;
 use egui::{Color32, FontId, Stroke, Ui};
 
@@ -29,7 +29,7 @@ impl Default for Style {
             fg_color: None,
             cursor_trail: true,
             cursor_trail_color: None,
-            font: FontId::monospace(12.),
+            font: TextStyle::Monospace.resolve(&eframe::egui::Style::default()),
             default_focus_cursor: CursorType::Block(HexColor::Hex8(Color32::WHITE)),
             default_unfocus_cursor: CursorType::OpenBlock(HexColor::Hex8(Color32::WHITE)),
             cursor_stroke: Stroke::new(1., Color32::WHITE),

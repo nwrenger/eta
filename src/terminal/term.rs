@@ -477,6 +477,7 @@ impl TermHandler {
             self.text_width,
             self.text_height,
         );
+
         if self.was_focused {
             self.cursor_renderer
                 .draw_cursor(ui.painter_at(r.rect), ui.input(|i| i.stable_dt.min(0.1)));

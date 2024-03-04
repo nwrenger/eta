@@ -7,7 +7,8 @@ use eframe::{
         text::CCursor,
         text_edit::TextEditState,
         text_selection::{CCursorRange, CursorRange},
-        CursorIcon, Event, EventFilter, Key, Modifiers, Response, TextBuffer, TextStyle, Ui,
+        vec2, CursorIcon, Event, EventFilter, Key, Modifiers, Response, Stroke, TextBuffer,
+        TextStyle, Ui,
     },
     epaint::{Color32, Galley, Vec2},
 };
@@ -321,18 +322,18 @@ impl ExtendedCodeEditor {
                 && adjusted_cursor_pos.y <= rect.max.y;
             // Render the cursor
             if ui.memory(|r| r.has_focus(id)) && cursor_is_visible {
-                let cursor_width = 2.0;
-                let cursor_height = line_height + 1.0;
-
+                let cursor_width = 1.5;
+                let cursor_height = line_height + 2.0;
                 let cursor_rect = egui::Rect::from_min_size(
-                    adjusted_cursor_pos,
+                    adjusted_cursor_pos - vec2(cursor_width / 2., 0.),
                     Vec2::new(cursor_width, cursor_height),
                 );
 
-                painter.with_clip_rect(rect).rect_filled(
+                painter.with_clip_rect(rect).rect(
                     cursor_rect,
-                    0.5,
+                    egui::Rounding::same(0.75),
                     ui.visuals().strong_text_color(),
+                    Stroke::NONE,
                 );
             }
         }

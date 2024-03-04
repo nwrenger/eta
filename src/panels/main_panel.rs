@@ -32,7 +32,7 @@ pub fn init(ui: &mut Ui, project: &mut Project) {
             egui::panel::TopBottomPanel::bottom("terminal_panel")
                 .min_height(terminal_heigth)
                 .show(ui.ctx(), |ui| {
-                    terminal.style.cursor_trail = true;
+                    terminal.style.cursor_trail = false;
                     terminal.style.cursor_trail_color = None;
                     terminal.style.default_focus_cursor =
                         CursorType::Beam(HexColor::Hex8(Color32::WHITE));
