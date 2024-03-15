@@ -10,7 +10,7 @@ use eframe::{
         vec2, CursorIcon, Event, EventFilter, Key, Modifiers, Response, Stroke, TextBuffer,
         TextStyle, Ui,
     },
-    epaint::{Color32, Galley, Vec2},
+    epaint::{text::cursor::PCursor, Color32, Galley, Vec2},
 };
 use serde::{Deserialize, Serialize};
 
@@ -146,7 +146,15 @@ impl ExtendedCodeEditor {
 
                     Event::Copy => {
                         if cursor_range.is_empty() {
-                            ui.ctx().copy_text(text.as_str().to_string());
+                            ui.ctx().copy_text(
+                                text.as_str()
+                                    .to_string()
+                                    .split('\n')
+                                    .nth(cursor_range.primary.rcursor.row)
+                                    .unwrap_or_default()
+                                    .to_string()
+                                    + "\n",
+                            );
                         } else {
                             ui.ctx()
                                 .copy_text(cursor_range.slice_str(text.as_str()).to_owned());
@@ -155,8 +163,18 @@ impl ExtendedCodeEditor {
                     }
                     Event::Cut => {
                         if cursor_range.is_empty() {
-                            ui.ctx().copy_text(text.take());
-                            Some(CCursorRange::default())
+                            ui.ctx().copy_text(
+                                text.as_str()
+                                    .to_string()
+                                    .split('\n')
+                                    .nth(cursor_range.primary.rcursor.row)
+                                    .unwrap_or_default()
+                                    .to_string()
+                                    + "\n",
+                            );
+                            text.delete_paragraph_after_cursor(&galley, &cursor_range);
+                            text.delete_paragraph_at_cursor(&galley, &cursor_range);
+                            Some(CCursorRange::one(cursor_range.primary.ccursor))
                         } else {
                             ui.ctx()
                                 .copy_text(cursor_range.slice_str(text.as_str()).to_owned());
@@ -431,5 +449,33 @@ pub trait ExtendedCodeEditorSpawner {
 impl ExtendedCodeEditorSpawner for Ui {
     fn ext_code_ui(&mut self, data: &mut FileData) -> Response {
         self.add(ExtendedCodeEditor::ui(data))
+    }
+}
+
+pub trait ExtendedTextBuffer {
+    fn delete_paragraph_at_cursor(
+        &mut self,
+        galley: &Galley,
+        cursor_range: &CursorRange,
+    ) -> CCursor;
+}
+
+impl ExtendedTextBuffer for dyn TextBuffer {
+    fn delete_paragraph_at_cursor(
+        &mut self,
+        galley: &Galley,
+        cursor_range: &CursorRange,
+    ) -> CCursor {
+        let [min, max] = cursor_range.sorted_cursors();
+        let max = galley.from_pcursor(PCursor {
+            paragraph: max.pcursor.paragraph,
+            offset: 1,
+            prefer_next_row: false,
+        });
+        if min.ccursor == max.ccursor {
+            self.delete_next_char(min.ccursor)
+        } else {
+            self.delete_selected(&CursorRange::two(min, max))
+        }
     }
 }
